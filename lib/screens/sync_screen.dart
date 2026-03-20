@@ -64,13 +64,11 @@ class _SyncScreenState extends State<SyncScreen> {
   }
 
   void _goToPassword(String localPath) {
-    Navigator.pushReplacement(
-      context,
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PasswordScreen(
-          onSuccess: () {
-            Navigator.pushReplacement(
-              context,
+          onSuccess: (BuildContext passwordContext) {
+            Navigator.of(passwordContext).pushReplacement(
               MaterialPageRoute(
                 builder: (_) => WebViewScreen(localPath: localPath),
               ),
