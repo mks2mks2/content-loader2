@@ -22,7 +22,7 @@ class SyncResult {
 class DownloadService {
   // ─── CONFIGURAÇÃO ────────────────────────────────────────────────────────────
   // Altere apenas esta URL para apontar para o seu servidor InfinityFree
-  static const String _baseUrl = 'https://seusite.infinityfreeapp.com';
+  static const String _baseUrl = 'https://mks2mks2.page.gd/app-server-esse';
   static const String _manifestPath = '/manifest.json';
   // ─────────────────────────────────────────────────────────────────────────────
 
