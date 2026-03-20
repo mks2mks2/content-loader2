@@ -34,6 +34,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
   void _initWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..enableZoom(false)
       ..setBackgroundColor(AppTheme.background)
       ..setNavigationDelegate(
         NavigationDelegate(
@@ -51,7 +52,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
           onNavigationRequest: (_) => NavigationDecision.navigate,
         ),
       )
-      ..loadFile(widget.localPath);
+      ..loadRequest(Uri.file(widget.localPath));
   }
 
   void _startConnectivityMonitor() {
