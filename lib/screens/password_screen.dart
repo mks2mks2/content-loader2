@@ -6,10 +6,8 @@ import '../theme/app_theme.dart';
 import '../services/password_service.dart';
 
 class PasswordScreen extends StatefulWidget {
-  /// Chamado quando a senha correta é digitada.
-  final VoidCallback onSuccess;
-
-  /// Se true, exibe mensagem de "internet reconectada"
+  // onSuccess agora recebe o BuildContext da própria tela
+  final void Function(BuildContext context) onSuccess;
   final bool internetReconnected;
 
   const PasswordScreen({
@@ -58,7 +56,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
     final input = _controller.text.trim();
     if (PasswordService.validate(input)) {
       _countdownTimer?.cancel();
-      widget.onSuccess();
+      widget.onSuccess(context); // passa o contexto correto
     } else {
       setState(() {
         _wrongPassword = true;
@@ -95,7 +93,6 @@ class _PasswordScreenState extends State<PasswordScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Ícone de cadeado
                 Container(
                   width: 72,
                   height: 72,
@@ -123,7 +120,6 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
                 const SizedBox(height: 10),
 
-                // Mensagem de contexto
                 Text(
                   widget.internetReconnected
                       ? 'Internet reconectada.\nDigite a senha para continuar.'
@@ -137,7 +133,6 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
                 const SizedBox(height: 40),
 
-                // Campo de senha com animação de shake
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 100),
                   transform: Matrix4.translationValues(
@@ -203,7 +198,6 @@ class _PasswordScreenState extends State<PasswordScreen> {
                   ),
                 ).animate().fadeIn(delay: 200.ms),
 
-                // Mensagem de erro
                 AnimatedOpacity(
                   opacity: _wrongPassword ? 1.0 : 0.0,
                   duration: const Duration(milliseconds: 200),
@@ -221,7 +215,6 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
                 const SizedBox(height: 24),
 
-                // Botão confirmar
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -246,7 +239,6 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
                 const SizedBox(height: 32),
 
-                // Contador regressivo
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 20, vertical: 12),
