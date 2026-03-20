@@ -72,8 +72,8 @@ class _WebViewScreenState extends State<WebViewScreen> {
       MaterialPageRoute(
         builder: (_) => PasswordScreen(
           internetReconnected: true,
-          onSuccess: () {
-            Navigator.pop(context);
+          onSuccess: (passwordContext) {
+            Navigator.pop(passwordContext);
             setState(() => _showingPasswordScreen = false);
           },
         ),
