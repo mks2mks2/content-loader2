@@ -22,12 +22,19 @@ class SyncResult {
 class DownloadService {
   // ─── CONFIGURAÇÃO ────────────────────────────────────────────────────────────
   // Altere apenas esta URL para apontar para o seu servidor InfinityFree
-  static const String _baseUrl = 'https://mks2mks2.page.gd/app-server-esse';
+  static const String _baseUrl = 'https://seusite.infinityfreeapp.com';
   static const String _manifestPath = '/manifest.json';
   // ─────────────────────────────────────────────────────────────────────────────
 
   static const String _prefVersion = 'content_version';
   static const String _prefIndexPath = 'local_index_path';
+
+  // Cabeçalhos para evitar bloqueio anti-bot do InfinityFree
+  static const Map<String, String> _headers = {
+    'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 '
+        '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    'Accept': 'text/html,application/json,*/*',
+  };
 
   /// Executa a sincronização completa.
   /// [onProgress] recebe dois valores: arquivo atual e total de arquivos.
@@ -63,7 +70,6 @@ class DownloadService {
       if (localVersion == remoteVersion && existingIndexPath.isNotEmpty) {
         final existingFile = File(existingIndexPath);
         if (await existingFile.exists()) {
-          // Conteúdo já está atualizado
           return SyncResult(
             status: SyncStatus.upToDate,
             localIndexPath: existingIndexPath,
@@ -97,7 +103,6 @@ class DownloadService {
           );
         }
 
-        // Identificar o arquivo de entrada principal
         if (fileName == 'index.html' || indexPath == null) {
           indexPath = '${contentDir.path}/$fileName';
         }
@@ -133,7 +138,9 @@ class DownloadService {
   static Future<Map<String, dynamic>?> _fetchManifest() async {
     try {
       final uri = Uri.parse('$_baseUrl$_manifestPath');
-      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+      final response = await http
+          .get(uri, headers: _headers)
+          .timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
@@ -147,10 +154,11 @@ class DownloadService {
   }) async {
     try {
       final uri = Uri.parse('$_baseUrl/$remotePath');
-      final response = await http.get(uri).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(uri, headers: _headers)
+          .timeout(const Duration(seconds: 30));
       if (response.statusCode != 200) return false;
 
-      // Criar subdiretórios se necessário (ex: "imagens/logo.png")
       final localFile = File('$localDir/$remotePath');
       await localFile.parent.create(recursive: true);
       await localFile.writeAsBytes(response.bodyBytes);
