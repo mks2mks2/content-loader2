@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Resultado do processo de sincronização
 enum SyncStatus { upToDate, updated, failed }
 
 class SyncResult {
@@ -20,35 +19,36 @@ class SyncResult {
 }
 
 class DownloadService {
-  // ─── CONFIGURAÇÃO ────────────────────────────────────────────────────────────
-  // Altere apenas esta URL para apontar para o seu servidor InfinityFree
   static const String _baseUrl = 'https://mks2mks2.page.gd/app-server-esse';
   static const String _manifestPath = '/manifest.json';
-  // ─────────────────────────────────────────────────────────────────────────────
 
   static const String _prefVersion = 'content_version';
   static const String _prefIndexPath = 'local_index_path';
 
-  // Cabeçalhos para evitar bloqueio anti-bot do InfinityFree
   static const Map<String, String> _headers = {
     'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 '
         '(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
     'Accept': 'text/html,application/json,*/*',
   };
 
-  /// Executa a sincronização completa.
-  /// [onProgress] recebe dois valores: arquivo atual e total de arquivos.
   static Future<SyncResult> sync({
     required void Function(int current, int total, String fileName) onProgress,
   }) async {
     try {
-      // 1. Baixar o manifesto
       final manifest = await _fetchManifest();
       if (manifest == null) {
         return const SyncResult(
           status: SyncStatus.failed,
           error: 'Não foi possível obter o manifesto do servidor.\n'
               'Verifique sua conexão e tente novamente.',
+        );
+      }
+
+      // Erro de diagnóstico retornado pelo _fetchManifest
+      if (manifest.containsKey('_debug_error')) {
+        return SyncResult(
+          status: SyncStatus.failed,
+          error: manifest['_debug_error']?.toString() ?? 'Erro desconhecido',
         );
       }
 
@@ -62,7 +62,6 @@ class DownloadService {
         );
       }
 
-      // 2. Comparar versão local com remota
       final prefs = await SharedPreferences.getInstance();
       final localVersion = prefs.getString(_prefVersion) ?? '';
       final existingIndexPath = prefs.getString(_prefIndexPath) ?? '';
@@ -77,7 +76,6 @@ class DownloadService {
         }
       }
 
-      // 3. Preparar diretório local
       final appDir = await getApplicationDocumentsDirectory();
       final contentDir = Directory('${appDir.path}/content');
       if (await contentDir.exists()) {
@@ -85,7 +83,6 @@ class DownloadService {
       }
       await contentDir.create(recursive: true);
 
-      // 4. Baixar cada arquivo
       String? indexPath;
       for (int i = 0; i < files.length; i++) {
         final fileName = files[i];
@@ -108,7 +105,6 @@ class DownloadService {
         }
       }
 
-      // 5. Salvar versão e caminho localmente
       await prefs.setString(_prefVersion, remoteVersion);
       await prefs.setString(_prefIndexPath, indexPath!);
 
@@ -124,7 +120,6 @@ class DownloadService {
     }
   }
 
-  /// Retorna o caminho local do index.html salvo anteriormente (se existir).
   static Future<String?> getCachedIndexPath() async {
     final prefs = await SharedPreferences.getInstance();
     final path = prefs.getString(_prefIndexPath);
@@ -132,8 +127,6 @@ class DownloadService {
     final file = File(path);
     return (await file.exists()) ? path : null;
   }
-
-  // ── Helpers privados ────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>?> _fetchManifest() async {
     try {
@@ -143,9 +136,19 @@ class DownloadService {
           .timeout(const Duration(seconds: 15));
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        // Retorna o erro com detalhes para diagnóstico
+        return {
+          '_debug_error': 'HTTP ${response.statusCode}\n'
+              'URL: $_baseUrl$_manifestPath\n'
+              'Resposta: ${response.body.substring(0, response.body.length.clamp(0, 200))}',
+        };
       }
-    } catch (_) {}
-    return null;
+    } catch (e) {
+      return {
+        '_debug_error': 'Exceção ao conectar:\n$e\n\nURL: $_baseUrl$_manifestPath',
+      };
+    }
   }
 
   static Future<bool> _downloadFile({
