@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/connectivity_service.dart';
 import '../screens/password_screen.dart';
-import '../screens/sync_screen.dart';
 
 class WebViewScreen extends StatefulWidget {
   final String localPath;
@@ -96,10 +95,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   void _goToSync() {
     ConnectivityService.stopMonitoring();
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const SyncScreen()),
-    );
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   @override
