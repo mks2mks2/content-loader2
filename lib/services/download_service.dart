@@ -19,7 +19,7 @@ class SyncResult {
 }
 
 class DownloadService {
-  static const String _baseUrl = 'https://mks2mks2.page.gd/app-server-esse';
+  static const String _baseUrl = 'https://maicon-english-teacher-app.netlify.app';
   static const String _manifestPath = '/manifest.json';
 
   static const String _prefVersion = 'content_version';
