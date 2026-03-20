@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -31,7 +32,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
     _startConnectivityMonitor();
   }
 
-  void _initWebView() {
+  Future<void> _initWebView() async {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..enableZoom(false)
@@ -44,15 +45,36 @@ class _WebViewScreenState extends State<WebViewScreen> {
           }),
           onProgress: (p) => setState(() => _loadingProgress = p / 100),
           onPageFinished: (_) => setState(() => _isLoading = false),
-          onWebResourceError: (error) => setState(() {
-            _isLoading = false;
-            _hasError = true;
-            _errorMessage = 'Erro ao carregar a página.\n${error.description}';
-          }),
-          onNavigationRequest: (_) => NavigationDecision.navigate,
+          onWebResourceError: (error) {
+            // Ignorar erros de sub-recursos (imagens, etc.) que não sejam da página principal
+            if (error.isForMainFrame ?? true) {
+              setState(() {
+                _isLoading = false;
+                _hasError = true;
+                _errorMessage = 'Erro ao carregar a página.\n${error.description}';
+              });
+            }
+          },
+          onNavigationRequest: (request) {
+            // Permitir navegação entre arquivos locais
+            return NavigationDecision.navigate;
+          },
         ),
-      )
-      ..loadRequest(Uri.file(widget.localPath));
+      );
+
+    // Ler o HTML e carregar com baseUrl apontando para a pasta local
+    try {
+      final file = File(widget.localPath);
+      final html = await file.readAsString();
+      final baseUrl = 'file://${file.parent.path}/';
+      await _controller.loadHtmlString(html, baseUrl: baseUrl);
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+        _errorMessage = 'Erro ao ler o arquivo local.\n$e';
+      });
+    }
   }
 
   void _startConnectivityMonitor() {
@@ -130,7 +152,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 20),
-            onPressed: () => _controller.reload(),
+            onPressed: () => _initWebView(),
             tooltip: 'Recarregar',
           ),
           IconButton(
@@ -189,7 +211,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
             ),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => _controller.reload(),
+              onPressed: () => _initWebView(),
               icon: const Icon(Icons.refresh_rounded),
               label: Text('Tentar novamente',
                   style: GoogleFonts.spaceGrotesk(
